@@ -11,7 +11,9 @@ import {
 Modal.setAppElement("#root");
 
 function App() {
-  const [pet, setPet] = useState({
+
+  //#region Instance states 
+  const emptyPet = {
     name: "",
     type: "",
     race: "",
@@ -20,16 +22,20 @@ function App() {
     ownerPhone: "",
     ownerAddress: "",
     ownerEmail: "",
+  };
+  
+  const [editMode, seteditMode] = useState({
+    status: false,
+    action: "",
+    id: "",
   });
-  const [pets, setpets] = useState([]);
-  const [editMode, seteditMode] = useState({ status: false, action: "create" });
-  const [deleteMode, setDeleteMode] = useState({ status: false, id: "" });
-  const [modalupsert, setmodalupsert] = useState("");
   const [processResult, setProcessResult] = useState({
     status: 0,
     message: "",
   });
-  // const [, setError] = useState(false);
+  const [pet, setPet] = useState(emptyPet);
+  const [pets, setpets] = useState([]);
+  const [deleteMode, setDeleteMode] = useState({ status: false, id: "" });
 
   const customStyles = {
     content: {
@@ -43,6 +49,7 @@ function App() {
       background: "#F8F8F8",
     },
   };
+  //#endregion
 
   useEffect(() => {
     (async () => {
@@ -68,13 +75,13 @@ function App() {
     }
 
     setpets([{ id: result.id, ...pet }, ...pets]);
+    setPet({});
     setProcessResult({ status: 1, message: "" });
     seteditMode({ status: false, action: "" });
   };
 
   const deletePet = async () => {
     const result = await deleteDocument("pets", deleteMode.id);
-    console.log(result);
 
     if (!result.statusResponse) {
       setProcessResult({ status: -1, message: result.error });
@@ -86,7 +93,38 @@ function App() {
     setpets(filteredPets);
   };
 
-  const editPet = () => {};
+  const editPet = async () => {
+    if (!validateForm()) {
+      setProcessResult({ status: -1, message: "Complete todos los campos" });
+      return;
+    }
+
+    const result = await updateDocument("pets", pet.id, pet);
+
+    if (!result.statusResponse) {
+      setProcessResult({ status: -1, message: result.error });
+      return;
+    }
+
+    const editedPets = pets.map((item) => (item.id == pet.id ? pet : item));
+    setpets(editedPets);
+    seteditMode({status:false, action:""})
+  };
+
+  const getPetToUpdate = (id) => {
+    setProcessResult({ status: 1, error: "" });
+    const petFound = pets.filter((item) => item.id == id);
+    size(petFound) > 0 && setPet(petFound[0]);
+
+    return true;
+  };
+
+  const cleanForm = () => {
+    setProcessResult({ status: 1, error: "" });
+    seteditMode({ status: true, action: "create" });
+    setPet(emptyPet);
+    return true;
+  };
 
   const validateForm = () => {
     let isValid = Object.values(pet).filter((item) => isEmpty(item));
@@ -94,34 +132,26 @@ function App() {
   };
 
   return (
-    <div>
+    <div className="m-3">
       <div>
-        <ul className="nav justify-content-end m-2">
+        <ul className="nav justify-content-end">
           <li className="nav-item">
             <a
               className="nav-link active"
               aria-current="page"
               href="#"
-              onClick={() => seteditMode({ status: true, action: "create" })}
+              onClick={() => cleanForm()}
             >
               Crear mascota
             </a>
           </li>
           <li className="nav-item">
-            <a
-              className="nav-link disabled"
-              href="#"
-              aria-disabled="true"
-            >
+            <a className="nav-link disabled" href="#" aria-disabled="true">
               Ingresar
             </a>
           </li>
           <li className="nav-item">
-            <a
-              className="nav-link disabled"
-              href="#"
-              aria-disabled="true"
-            >
+            <a className="nav-link disabled" href="#" aria-disabled="true">
               Registrarse
             </a>
           </li>
@@ -145,7 +175,12 @@ function App() {
                   >
                     Eliminar
                   </button>
-                  <button className="btn btn-warning btn-sm float-right">
+                  <button
+                    className="btn btn-warning btn-sm float-right"
+                    onClick={() =>
+                      seteditMode({ status: true, action: "edit", id: pet.id })
+                    }
+                  >
                     Editar
                   </button>
                 </li>
@@ -163,11 +198,19 @@ function App() {
       <div className="container container-fluid">
         <div className="modal">
           <div className="modal-content">
-            <Modal isOpen={editMode.status} style={customStyles}>
+            <Modal
+              isOpen={editMode.status}
+              onRequestClose={() => seteditMode({ status: false, action: "" })}
+              style={customStyles}
+              on
+              onAfterOpen={() =>
+                editMode.action === "edit" ? getPetToUpdate(editMode.id) : false
+              }
+            >
               <div className="col-12">
                 <h2>
-                  {editMode.action == "status"
-                    ? "Registrar"
+                  {editMode.action == "create"
+                    ? "Registro"
                     : "Actualización de datos"}
                 </h2>
                 <br></br>
@@ -267,15 +310,24 @@ function App() {
                       {processResult.status != 0 && processResult.message}
                     </span>
                   </div>
-                  <button className="btn btn-primary mx-2" type="submit">
-                    Guardar
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => seteditMode({ status: false, action: "" })}
-                  >
-                    Cancelar
-                  </button>
+                  <div className="float-right">
+                    <button
+                      className={
+                        editMode.action == "create"
+                          ? "btn btn-primary mx-2"
+                          : "btn btn-warning mx-2"
+                      }
+                      type="submit"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => seteditMode({ status: false, action: "" })}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </form>
               </div>
             </Modal>
