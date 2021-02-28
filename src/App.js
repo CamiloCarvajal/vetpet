@@ -11,7 +11,9 @@ import {
 Modal.setAppElement("#root");
 
 function App() {
-  const [pet, setPet] = useState({
+  // #region Instance states
+  // Load a empty pet
+  const emptyPet = {
     name: "",
     type: "",
     race: "",
@@ -20,17 +22,26 @@ function App() {
     ownerPhone: "",
     ownerAddress: "",
     ownerEmail: "",
+  };
+
+  // Set a edition mode, used to load the modal. Status: open or close the modal. Action: Operation that the modal will do. Id: when the action is `update`, search pet by id
+  const [editMode, seteditMode] = useState({
+    status: false,
+    action: "",
+    id: "",
   });
-  const [pets, setpets] = useState([]);
-  const [editMode, seteditMode] = useState({ status: false, action: "create" });
-  const [deleteMode, setDeleteMode] = useState({ status: false, id: "" });
-  const [modalupsert, setmodalupsert] = useState("");
+
+  // Validate form, set a message to display to the user
   const [processResult, setProcessResult] = useState({
     status: 0,
     message: "",
   });
-  // const [, setError] = useState(false);
 
+  const [pet, setPet] = useState(emptyPet); // Set a pet
+  const [pets, setpets] = useState([]); // Set all pets
+  const [deleteMode, setDeleteMode] = useState({ status: false, id: "" }); // Set mode delete. This open the confirmation modal to delete
+
+  //CSS styles to set to modals
   const customStyles = {
     content: {
       top: "50%",
@@ -43,7 +54,10 @@ function App() {
       background: "#F8F8F8",
     },
   };
+  // #endregion
 
+  // #region Functions
+  // Hook. execute automatically where page is reload.
   useEffect(() => {
     (async () => {
       const result = await getCollection("pets");
@@ -51,8 +65,9 @@ function App() {
         setpets(result.data);
       }
     })();
-  }, []);
+  }, []); // <- add a object into the array will do that this hook reload every this object changes
 
+  // Add a new pet into firebase
   const createPet = async (e) => {
     e.preventDefault();
 
@@ -67,13 +82,15 @@ function App() {
       return;
     }
 
+    setpets([{ id: result.data.id, ...pet }, ...pets]);
+    setPet({});
     setProcessResult({ status: 1, message: "" });
     seteditMode({ status: false, action: "" });
   };
 
+  // Delete a pet of firebase
   const deletePet = async () => {
     const result = await deleteDocument("pets", deleteMode.id);
-    console.log(result);
 
     if (!result.statusResponse) {
       setProcessResult({ status: -1, message: result.error });
@@ -85,26 +102,86 @@ function App() {
     setpets(filteredPets);
   };
 
-  const editPet = () => {};
+  // Edit a pet previously created into firebase
+  const editPet = async () => {
+    if (!validateForm()) {
+      setProcessResult({ status: -1, message: "Complete todos los campos" });
+      return;
+    }
 
+    const result = await updateDocument("pets", pet.id, pet);
+
+    if (!result.statusResponse) {
+      setProcessResult({ status: -1, message: result.error });
+      return;
+    }
+
+    const editedPets = pets.map((item) => (item.id == pet.id ? pet : item));
+    setpets(editedPets);
+    seteditMode({ status: false, action: "" });
+  };
+
+  // When modal to update is open, get the info of pet to load this information in the fields
+  const getPetToUpdate = (id) => {
+    setProcessResult({ status: 1, error: "" });
+    const petFound = pets.filter((item) => item.id == id);
+    size(petFound) > 0 && setPet(petFound[0]);
+
+    return true;
+  };
+
+  // When modal to create is open, clean information for set empty fields
+  const cleanForm = () => {
+    setProcessResult({ status: 1, error: "" });
+    seteditMode({ status: true, action: "create" });
+    setPet(emptyPet);
+    return true;
+  };
+
+  // Make sure all fields aren't empty
   const validateForm = () => {
     let isValid = Object.values(pet).filter((item) => isEmpty(item));
     return size(isValid) == 0;
   };
+  // #endregion
 
-  return ( 
-    <div>
+  return (
+    <div className="m-3">
+      <div>
+        <ul className="nav justify-content-end">
+          <li className="nav-item">
+            <a
+              className="nav-link active"
+              aria-current="page"
+              href="#"
+              onClick={() => cleanForm()}
+            >
+              Crear mascota
+            </a>
+          </li>
+          <li className="nav-item">
+            <a className="nav-link disabled" href="#" aria-disabled="true">
+              Ingresar
+            </a>
+          </li>
+          <li className="nav-item">
+            <a className="nav-link disabled" href="#" aria-disabled="true">
+              Registrarse
+            </a>
+          </li>
+        </ul>
+      </div>
       <div>
         <div className="container mt-5">
           <ul className="list-group">
             {size(pets) > 0 ? (
               pets.map((pet) => (
                 <li className="list-group-item" key={pet.id}>
-                  <span className="text-danger">{pet.name}</span>
+                  <span className="text-danger h6">{pet.name}</span>
                   <ul className="list-group list-group-flush">
                     <li className="list-group-item">Tipo: {pet.type}</li>
                     <li className="list-group-item">Raza: {pet.race}</li>
-                    <li className="list-group-item">Dueno: {pet.ownerName}</li>
+                    <li className="list-group-item">Dueño: {pet.ownerName}</li>
                   </ul>
                   <button
                     className="btn btn-danger btn-sm float-right mx-2"
@@ -112,7 +189,12 @@ function App() {
                   >
                     Eliminar
                   </button>
-                  <button className="btn btn-warning btn-sm float-right">
+                  <button
+                    className="btn btn-warning btn-sm float-right"
+                    onClick={() =>
+                      seteditMode({ status: true, action: "edit", id: pet.id })
+                    }
+                  >
                     Editar
                   </button>
                 </li>
@@ -130,11 +212,18 @@ function App() {
       <div className="container container-fluid">
         <div className="modal">
           <div className="modal-content">
-            <Modal isOpen={editMode.status} style={customStyles}>
+            <Modal
+              isOpen={editMode.status}
+              onRequestClose={() => seteditMode({ status: false, action: "" })}
+              style={customStyles}
+              onAfterOpen={() =>
+                editMode.action === "edit" ? getPetToUpdate(editMode.id) : false
+              }
+            >
               <div className="col-12">
                 <h2>
-                  {editMode.action == "status"
-                    ? "Registrar"
+                  {editMode.action == "create"
+                    ? "Registro"
                     : "Actualización de datos"}
                 </h2>
                 <br></br>
@@ -234,10 +323,24 @@ function App() {
                       {processResult.status != 0 && processResult.message}
                     </span>
                   </div>
-                  <button className="btn btn-primary mx-2" type="submit">
-                    Guardar
-                  </button>
-                  <button className="btn btn-secondary">Cancelar</button>
+                  <div className="float-right">
+                    <button
+                      className={
+                        editMode.action == "create"
+                          ? "btn btn-primary mx-2"
+                          : "btn btn-warning mx-2"
+                      }
+                      type="submit"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => seteditMode({ status: false, action: "" })}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </form>
               </div>
             </Modal>
