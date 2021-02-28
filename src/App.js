@@ -82,7 +82,7 @@ function App() {
       return;
     }
 
-    setpets([{ id: result.id, ...pet }, ...pets]);
+    setpets([{ id: result.data.id, ...pet }, ...pets]);
     setPet({});
     setProcessResult({ status: 1, message: "" });
     seteditMode({ status: false, action: "" });
