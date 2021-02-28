@@ -67,6 +67,7 @@ function App() {
       return;
     }
 
+    setpets([{ id: result.id, ...pet }, ...pets]);
     setProcessResult({ status: 1, message: "" });
     seteditMode({ status: false, action: "" });
   };
@@ -92,19 +93,51 @@ function App() {
     return size(isValid) == 0;
   };
 
-  return ( 
+  return (
     <div>
+      <div>
+        <ul className="nav justify-content-end m-2">
+          <li className="nav-item">
+            <a
+              className="nav-link active"
+              aria-current="page"
+              href="#"
+              onClick={() => seteditMode({ status: true, action: "create" })}
+            >
+              Crear mascota
+            </a>
+          </li>
+          <li className="nav-item">
+            <a
+              className="nav-link disabled"
+              href="#"
+              aria-disabled="true"
+            >
+              Ingresar
+            </a>
+          </li>
+          <li className="nav-item">
+            <a
+              className="nav-link disabled"
+              href="#"
+              aria-disabled="true"
+            >
+              Registrarse
+            </a>
+          </li>
+        </ul>
+      </div>
       <div>
         <div className="container mt-5">
           <ul className="list-group">
             {size(pets) > 0 ? (
               pets.map((pet) => (
                 <li className="list-group-item" key={pet.id}>
-                  <span className="text-danger">{pet.name}</span>
+                  <span className="text-danger h6">{pet.name}</span>
                   <ul className="list-group list-group-flush">
                     <li className="list-group-item">Tipo: {pet.type}</li>
                     <li className="list-group-item">Raza: {pet.race}</li>
-                    <li className="list-group-item">Dueno: {pet.ownerName}</li>
+                    <li className="list-group-item">Dueño: {pet.ownerName}</li>
                   </ul>
                   <button
                     className="btn btn-danger btn-sm float-right mx-2"
@@ -237,7 +270,12 @@ function App() {
                   <button className="btn btn-primary mx-2" type="submit">
                     Guardar
                   </button>
-                  <button className="btn btn-secondary">Cancelar</button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => seteditMode({ status: false, action: "" })}
+                  >
+                    Cancelar
+                  </button>
                 </form>
               </div>
             </Modal>
