@@ -22,7 +22,8 @@ function App() {
     ownerEmail: "",
   });
   const [pets, setpets] = useState([]);
-  const [editMode, seteditMode] = useState({ status: false, action: "" });
+  const [editMode, seteditMode] = useState({ status: false, action: "create" });
+  const [deleteMode, setDeleteMode] = useState({ status: false, id: "" });
   const [modalupsert, setmodalupsert] = useState("");
   const [processResult, setProcessResult] = useState({
     status: 0,
@@ -52,11 +53,6 @@ function App() {
     })();
   }, []);
 
-  const validateForm = () => {
-    let isValid = Object.values(pet).filter((item) => isEmpty(item));
-    return size(isValid) == 0;
-  };
-
   const createPet = async (e) => {
     e.preventDefault();
 
@@ -75,23 +71,45 @@ function App() {
     seteditMode({ status: false, action: "" });
   };
 
+  const deletePet = async () => {
+    const result = await deleteDocument("pets", deleteMode.id);
+    console.log(result);
+
+    if (!result.statusResponse) {
+      setProcessResult({ status: -1, message: result.error });
+      return;
+    }
+
+    setDeleteMode({ status: false, id: "" });
+    const filteredPets = pets.filter((item) => item.id != deleteMode.id);
+    setpets(filteredPets);
+  };
+
   const editPet = () => {};
 
-  return (
+  const validateForm = () => {
+    let isValid = Object.values(pet).filter((item) => isEmpty(item));
+    return size(isValid) == 0;
+  };
+
+  return ( 
     <div>
       <div>
         <div className="container mt-5">
-          <ul class="list-group">
+          <ul className="list-group">
             {size(pets) > 0 ? (
               pets.map((pet) => (
-                <li class="list-group-item">
+                <li className="list-group-item" key={pet.id}>
                   <span className="text-danger">{pet.name}</span>
-                  <ul class="list-group list-group-flush">
-                    <li class="list-group-item">Tipo: {pet.type}</li>
-                    <li class="list-group-item">Raza: {pet.race}</li>
-                    <li class="list-group-item">Dueno: {pet.ownerName}</li>
+                  <ul className="list-group list-group-flush">
+                    <li className="list-group-item">Tipo: {pet.type}</li>
+                    <li className="list-group-item">Raza: {pet.race}</li>
+                    <li className="list-group-item">Dueno: {pet.ownerName}</li>
                   </ul>
-                  <button className="btn btn-danger btn-sm float-right mx-2">
+                  <button
+                    className="btn btn-danger btn-sm float-right mx-2"
+                    onClick={() => setDeleteMode({ status: true, id: pet.id })}
+                  >
                     Eliminar
                   </button>
                   <button className="btn btn-warning btn-sm float-right">
@@ -100,7 +118,7 @@ function App() {
                 </li>
               ))
             ) : (
-              <li class="list-group-item">
+              <li className="list-group-item">
                 No se ha encontrado ninguna mascota
               </li>
             )}
@@ -225,6 +243,35 @@ function App() {
             </Modal>
           </div>
         </div>
+      </div>
+      <div>
+        <Modal isOpen={deleteMode.status} style={customStyles}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Eliminar mascota</h5>
+            </div>
+            <div className="modal-body">
+              <p>Realmente desea eliminar esta mascota?</p>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                data-bs-dismiss="modal"
+                onClick={() => setDeleteMode({ status: false })}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={deletePet}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </div>
   );
