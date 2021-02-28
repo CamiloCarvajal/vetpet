@@ -216,7 +216,6 @@ function App() {
               isOpen={editMode.status}
               onRequestClose={() => seteditMode({ status: false, action: "" })}
               style={customStyles}
-              on
               onAfterOpen={() =>
                 editMode.action === "edit" ? getPetToUpdate(editMode.id) : false
               }
