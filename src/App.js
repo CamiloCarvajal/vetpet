@@ -11,8 +11,8 @@ import {
 Modal.setAppElement("#root");
 
 function App() {
-
-  //#region Instance states 
+  // #region Instance states
+  // Load a empty pet
   const emptyPet = {
     name: "",
     type: "",
@@ -23,20 +23,25 @@ function App() {
     ownerAddress: "",
     ownerEmail: "",
   };
-  
+
+  // Set a edition mode, used to load the modal. Status: open or close the modal. Action: Operation that the modal will do. Id: when the action is `update`, search pet by id
   const [editMode, seteditMode] = useState({
     status: false,
     action: "",
     id: "",
   });
+
+  // Validate form, set a message to display to the user
   const [processResult, setProcessResult] = useState({
     status: 0,
     message: "",
   });
-  const [pet, setPet] = useState(emptyPet);
-  const [pets, setpets] = useState([]);
-  const [deleteMode, setDeleteMode] = useState({ status: false, id: "" });
 
+  const [pet, setPet] = useState(emptyPet); // Set a pet
+  const [pets, setpets] = useState([]); // Set all pets
+  const [deleteMode, setDeleteMode] = useState({ status: false, id: "" }); // Set mode delete. This open the confirmation modal to delete
+
+  //CSS styles to set to modals
   const customStyles = {
     content: {
       top: "50%",
@@ -49,8 +54,10 @@ function App() {
       background: "#F8F8F8",
     },
   };
-  //#endregion
+  // #endregion
 
+  // #region Functions
+  // Hook. execute automatically where page is reload.
   useEffect(() => {
     (async () => {
       const result = await getCollection("pets");
@@ -58,8 +65,9 @@ function App() {
         setpets(result.data);
       }
     })();
-  }, []);
+  }, []); // <- add a object into the array will do that this hook reload every this object changes
 
+  // Add a new pet into firebase
   const createPet = async (e) => {
     e.preventDefault();
 
@@ -80,6 +88,7 @@ function App() {
     seteditMode({ status: false, action: "" });
   };
 
+  // Delete a pet of firebase
   const deletePet = async () => {
     const result = await deleteDocument("pets", deleteMode.id);
 
@@ -93,6 +102,7 @@ function App() {
     setpets(filteredPets);
   };
 
+  // Edit a pet previously created into firebase
   const editPet = async () => {
     if (!validateForm()) {
       setProcessResult({ status: -1, message: "Complete todos los campos" });
@@ -108,9 +118,10 @@ function App() {
 
     const editedPets = pets.map((item) => (item.id == pet.id ? pet : item));
     setpets(editedPets);
-    seteditMode({status:false, action:""})
+    seteditMode({ status: false, action: "" });
   };
 
+  // When modal to update is open, get the info of pet to load this information in the fields
   const getPetToUpdate = (id) => {
     setProcessResult({ status: 1, error: "" });
     const petFound = pets.filter((item) => item.id == id);
@@ -119,6 +130,7 @@ function App() {
     return true;
   };
 
+  // When modal to create is open, clean information for set empty fields
   const cleanForm = () => {
     setProcessResult({ status: 1, error: "" });
     seteditMode({ status: true, action: "create" });
@@ -126,10 +138,12 @@ function App() {
     return true;
   };
 
+  // Make sure all fields aren't empty
   const validateForm = () => {
     let isValid = Object.values(pet).filter((item) => isEmpty(item));
     return size(isValid) == 0;
   };
+  // #endregion
 
   return (
     <div className="m-3">
