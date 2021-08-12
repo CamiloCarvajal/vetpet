@@ -103,7 +103,8 @@ function App() {
   };
 
   // Edit a pet previously created into firebase
-  const editPet = async () => {
+  const editPet = async (e) => {
+    e.preventDefault();
     if (!validateForm()) {
       setProcessResult({ status: -1, message: "Complete todos los campos" });
       return;
