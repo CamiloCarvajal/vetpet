@@ -1,10 +1,10 @@
 # Description
 
-Application focused on a veterinarian, which allows you to register the information of a pet and its respective owner.
+Application focused on a vet, which allows you to register the information of a pet and its respective owner.
 
 you can perform:
 
-- Pet registration.
+- Pet registration
 - Modify the information of a pet
 - Delete a pet
 - Also, all pets are listed by default on the main page 
